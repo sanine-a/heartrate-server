@@ -6,6 +6,7 @@
 #include "smmServer.hpp"
 #include "ArduinoSerial.h"
 #include "SignalProcessor.h"
+#include "ConnectionManager.h"
 
 #define MAX_DATA_POINTS 8192
 
@@ -16,22 +17,17 @@
 #define MAX_PERSISTENCE_TIME 50
 #define MAX_SCALE 3
 
-const std::string AUDIO_DIRECTORY = "./audio/";
+ArduinoSerial* arduino;
+ConnectionManager* connManager;
 SignalProcessor* ecgSignal;
-sf::Sound sound;
-bool pinging;
+sf::Sound heartbeat;
 int numNewDataPoints = 0;
-std::chrono::steady_clock::time_point lastPingTime;
-std::chrono::duration<double> checkPingTime(5);
-std::chrono::duration<double> errorPingTime(6);
-sf::SoundBuffer buffer;
 
 void processMessage(std::string key, std::string value)
 {
-    //std::cout << key << ":" << value << std::endl;
+    std::cout << key << ":" << value << std::endl;
     if (key == "arduino-ready") {
-        pinging = false;
-        lastPingTime = std::chrono::steady_clock::now();
+        connManager->pingReceived();
     }
     else if (key == "signal") {
         int v = stoi(value);
@@ -57,39 +53,12 @@ void getData(httpMessage message,
     message.replyHttpContent("text/plain", dataString);
     }*/
 
-bool connectArduino(ArduinoSerial& arduino, int maxAttempts = 10)
-{
-    int attempts = 0;
-    try {
-        auto portlist = arduino.findMatchingPorts(METRO_MINI_VID, METRO_MINI_PID);
-        if (portlist.size() > 0) {
-            while(!arduino.openPort(portlist[0], 115200) && attempts < maxAttempts) {
-                  std::cerr << "WARNING: handshake failed! retrying..." << std::endl;
-                  attempts++;
-                  arduino.closePort();
-            }
-        }
-        else {
-            std::cerr << "ERROR: no arduino detected!" << std::endl;
-            return false;
-        }
-    }
-    catch (std::runtime_error error) {
-        std::cerr << "FATAL: " << error.what() << std::endl;
-        return false;
-    }
-    if (attempts == maxAttempts) {
-        std::cerr << "ERROR: maximum handshake attempts exceeded!" << std::endl;
-        return false;
-    }
-    return true;
-}
-
-
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 int main()
 {
+    arduino = new ArduinoSerial();
+    connManager = new ConnectionManager(*arduino, 5, 6);
     ecgSignal = new SignalProcessor(SIGNAL_LOWPASS,
                                     DERIVATIVE_LOWPASS,
                                     N_AVG_SAMPLES,
@@ -97,21 +66,18 @@ int main()
                                     MAX_PERSISTENCE_TIME,
                                     MAX_SCALE);
     
+    sf::SoundBuffer buffer;
     if (!buffer.loadFromFile("heartbeat.wav")) {
         std::cerr << "ERROR: could not find 'heartbeat.wav'!" << std::endl;
         return 1;
     }
-    sound.setBuffer(buffer);
+    heartbeat.setBuffer(buffer);
 
-    ecgSignal->setTriggerCallback([]() { sound.play(); });
-        
-    ArduinoSerial arduino;
-    pinging = false;
-    arduino.setDataCallback(processMessage);
-    if (connectArduino(arduino)) {
-        lastPingTime = std::chrono::steady_clock::now();
-    }
-    else
+    ecgSignal->setTriggerCallback([]() { heartbeat.play(); });
+
+    arduino->setDataCallback(processMessage);
+
+    if (!connManager->connect(10))
         return 1;
 
     smmServer server("8000", "./web_root", NULL);
@@ -121,24 +87,13 @@ int main()
     std::cout << "Launched server on port 8000" << std::endl;
 
     while(server.isRunning()) {
-        std::chrono::duration<double> timeSincePing =
-            std::chrono::duration_cast<std::chrono::duration<double>> (std::chrono::steady_clock::now() -
-                                                                       lastPingTime);
-        if (timeSincePing > errorPingTime) {
-            std::cerr << "WARNING: arduino connection lost! attempting to reconnect..." << std::endl;
-            lastPingTime = std::chrono::steady_clock::now();
-            pinging = false;
-            arduino.closePort();
-            connectArduino(arduino);
-        }
-        else if (timeSincePing > checkPingTime && !pinging) {
-            arduino.send("wake-arduino", "1");
-            pinging = true;
-        }
-        arduino.update();
+        connManager->update();
+        arduino->update();
     }
 
     delete ecgSignal;
+    delete connManager;
+    delete arduino;
 
     return 0;
 }

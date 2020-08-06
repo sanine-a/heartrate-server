@@ -12,6 +12,7 @@ add_executable(heartrate-server
   src/ArduinoSerial.cpp
   src/SignalProcessor.cpp
   src/SignalProcessor-Auxillary.cpp
+  src/ConnectionManager.cpp
   src/main.cpp)
 
 target_link_libraries(heartrate-server ssl crypto Threads::Threads serialport sfml-audio)
