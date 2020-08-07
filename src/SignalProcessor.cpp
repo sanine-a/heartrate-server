@@ -36,7 +36,6 @@ void SignalProcessor::leadsOff()
 
 void SignalProcessor::addDataPoint(double datapoint)
 {
-    static int i = 0;
     signalLowPass =
         (1-signalLowPassWeight)*signalLowPass +
         signalLowPassWeight * datapoint;
@@ -64,16 +63,11 @@ void SignalProcessor::addDataPoint(double datapoint)
     else
         triggered = false;
 
-    std::cout << i << " "
-              << datapoint << " "
-              << signalLowPass << " "
-              << signal << " "
-              << positiveSignal << " "
-              << diff.getDerivative() << " "
-              << derivativeLowPass << " "
-              << diffMax.getMaximum() << " "
-              << diffMaxAvg.getAverage() << std::endl;
-    i++;
+    rawSignal.push_back(datapoint);
+    filteredSignal.push_back(signal);
+    signalDerivative.push_back(diff.getDerivative());
+    filteredDerivative.push_back(derivativeLowPass);
+    derivativeMaxAverage.push_back(diffMaxAvg.getAverage());
 }
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -83,5 +77,54 @@ void SignalProcessor::setTriggerCallback(void (*callback)())
     this->callback = callback;
 }
             
-        
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+std::string SignalProcessor::getDataString(unsigned long lastIndex,
+                                           unsigned int signalSelect = 0)
+{
+    std::string dataString = "[";
+    std::vector<double>* dataset;
+    switch(signalSelect) {
+    case 0:
+        dataset = &rawSignal;
+        break;
+
+    case 1:
+        dataset = &filteredSignal;
+        break;
+
+    case 3:
+        dataset = &signalDerivative;
+        break;
+
+    case 4:
+        dataset = &filteredDerivative;
+        break;
+
+    case 5:
+        dataset = &derivativeMaxAverage;
+        break;
+
+    default:
+        return "[]";
+    }
+
+    if (lastIndex > dataset->size())
+        return "[]";
+
+    for (auto i = dataset->begin()+lastIndex; i != dataset->end(); i++) {
+        dataString += std::to_string(*i);
+        dataString += ",";
+    }
+
+    if (dataString.length() > 1)
+        dataString.pop_back();
+
+    dataString += "]";
+
+    std::cout << dataString << std::endl;
+    
+    return dataString;
+}
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

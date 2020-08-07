@@ -25,7 +25,6 @@ int numNewDataPoints = 0;
 
 void processMessage(std::string key, std::string value)
 {
-    std::cout << key << ":" << value << std::endl;
     if (key == "arduino-ready") {
         connManager->pingReceived();
     }
@@ -38,20 +37,20 @@ void processMessage(std::string key, std::string value)
     
 void getData(httpMessage message,
              void* d)
-{}
-/*
-    int startIndex = data.size() - numNewDataPoints;
-    numNewDataPoints = 0;
-    std::string dataString = "[";
-    for (auto i = data.begin()+startIndex; i != data.end(); i++) {
-        dataString += std::to_string(*i);
-        dataString += ',';
+{
+    int lastIndex, signalSelect;
+    try {
+        std::string indexString =  message.getHttpVariable("index");
+        std::string signalString = message.getHttpVariable("signal");
+        lastIndex = std::stoi(indexString);
+        signalSelect = std::stoi(signalString);
     }
-    if (dataString.length() > 1)
-        dataString.pop_back();
-    dataString += "]";
-    message.replyHttpContent("text/plain", dataString);
-    }*/
+    catch(std::exception error) {
+        std::cerr << "error parsing POST request: " << error.what() << std::endl;
+        message.replyHttpContent("text/plain", "[]");
+    }
+    message.replyHttpContent("text/plain", ecgSignal->getDataString(lastIndex, signalSelect));
+}
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 

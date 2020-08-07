@@ -3,6 +3,7 @@
 
 #include <vector>
 #include <deque>
+#include <string>
 
 class Averager
 {
@@ -61,9 +62,15 @@ class SignalProcessor
     void leadsOff();
     void addDataPoint(double datapoint);
     void setTriggerCallback(void (*callback)());
+    std::string getDataString(unsigned long lastIndex,
+                              unsigned int signalSelect);
 
  private:
-    std::vector<double> signal;
+    std::vector<double> rawSignal,
+        filteredSignal,
+        signalDerivative,
+        filteredDerivative,
+        derivativeMaxAverage;
     Averager avg, diffMaxAvg;
     Differentiator diff;
     RollingMaximum diffMax;

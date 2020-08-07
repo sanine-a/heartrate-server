@@ -9,7 +9,8 @@ ConnectionManager::ConnectionManager(ArduinoSerial& arduino,
     : arduino(arduino),
       checkPingTime(checkPingTime),
       errorPingTime(errorPingTime),
-      pinging(false)
+      pinging(false),
+      connected(false)
 {
     lastPingTime = std::chrono::steady_clock::now();
 }
@@ -41,6 +42,7 @@ bool ConnectionManager::connect(int maxAttempts)
         std::cerr << "ERROR: maximum handshake attempts exceeded!" << std::endl;
         return false;
     }
+    connected = true;
     return true;
 }
 
@@ -53,6 +55,7 @@ void ConnectionManager::update()
                                                                    lastPingTime);
     if (timeSincePing > errorPingTime) {
         std::cerr << "WARNING: arduino connection lost! attempting to reconnect..." << std::endl;
+        connected = false;
         lastPingTime = std::chrono::steady_clock::now();
         pinging = false;
         arduino.closePort();

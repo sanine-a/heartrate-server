@@ -1,5 +1,6 @@
 let plot;
 const MAX_DATA_POINTS = 8192;
+let lastIndex;
 
 $(document).ready( () => {
     plot = document.getElementById('plot');
@@ -16,9 +17,13 @@ $(document).ready( () => {
 
 function updatePlot() {
     $.post('/post',
-           { callback: 'getData' },
+           { callback: 'getData',
+             signal: 0,
+             index: lastIndex,
+           },
            (data) => { console.log(data);
                        const dataArray = JSON.parse(data);
+                       lastIndex += dataArray.length;
                        Plotly.extendTraces(plot,
                                            { y: [dataArray] },
                                            [0], MAX_DATA_POINTS);

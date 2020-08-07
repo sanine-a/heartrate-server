@@ -13,13 +13,14 @@ class ConnectionManager
     bool connect(int maxAttempts);
     void update();
     void pingReceived();
+    bool isConnected();
 
  private:
     ArduinoSerial& arduino;
     std::chrono::steady_clock::time_point lastPingTime;
     std::chrono::duration<double> checkPingTime;
     std::chrono::duration<double> errorPingTime;
-    bool pinging;
+    bool pinging, connected;
 };
 
 #endif
