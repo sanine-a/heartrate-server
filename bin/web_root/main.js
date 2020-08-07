@@ -1,6 +1,7 @@
 let plot;
 const MAX_DATA_POINTS = 8192;
-let lastIndex;
+let lastIndex = 0;
+let status = "Arduino not connected";
 
 $(document).ready( () => {
     plot = document.getElementById('plot');
@@ -12,17 +13,32 @@ $(document).ready( () => {
                     [{ y: basic }],
                     { margin: { t: 0 } },
                     { staticPlot: true, });
-    window.setInterval(updatePlot, 50);
+    window.setInterval(updatePlot, 100);
+    window.setInterval(updateStatus, 500);
 });
 
-function updatePlot() {
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+function updateStatus()
+{
+    $.post('/post',
+           { callback: 'checkStatus' },
+           (data) => { status = data; });
+    $('#status').text(status);
+}
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+function updatePlot()
+{
+    if (status !== "Connected, leads on")
+        return;
     $.post('/post',
            { callback: 'getData',
              signal: 0,
              index: lastIndex,
            },
-           (data) => { console.log(data);
-                       const dataArray = JSON.parse(data);
+           (data) => { const dataArray = JSON.parse(data);
                        lastIndex += dataArray.length;
                        Plotly.extendTraces(plot,
                                            { y: [dataArray] },

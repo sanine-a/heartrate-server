@@ -4,6 +4,7 @@
 #include <vector>
 #include <deque>
 #include <string>
+#include <mutex>
 
 class Averager
 {
@@ -83,6 +84,7 @@ class SignalProcessor
     bool leadsAreOff, triggered;
 
     void (*callback) ();
+    std::mutex protection;
 };
     
 

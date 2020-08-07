@@ -22,6 +22,7 @@ ConnectionManager* connManager;
 SignalProcessor* ecgSignal;
 sf::Sound heartbeat;
 int numNewDataPoints = 0;
+bool leadsOff = true;
 
 void processMessage(std::string key, std::string value)
 {
@@ -32,6 +33,12 @@ void processMessage(std::string key, std::string value)
         int v = stoi(value);
         ecgSignal->addDataPoint(v);
         numNewDataPoints++;
+    }
+    else if (key == "leads-off") {
+        if (value == "1")
+            leadsOff = true;
+        else
+            leadsOff = false;
     }
 }
     
@@ -50,6 +57,20 @@ void getData(httpMessage message,
         message.replyHttpContent("text/plain", "[]");
     }
     message.replyHttpContent("text/plain", ecgSignal->getDataString(lastIndex, signalSelect));
+}
+
+void checkStatus(httpMessage message,
+                 void* d)
+{
+    if (!connManager->isConnected()) {
+        message.replyHttpContent("text/plain", "Arduino not connected");
+    }
+    else if (leadsOff) {
+        message.replyHttpContent("text/plain", "Connected, leads off");
+    }
+    else {
+        message.replyHttpContent("text/plain", "Connected, leads on");
+    }
 }
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -81,6 +102,7 @@ int main()
 
     smmServer server("8000", "./web_root", NULL);
     server.addPostCallback("getData", getData);
+    server.addPostCallback("checkStatus", checkStatus);
     server.launch();
 
     std::cout << "Launched server on port 8000" << std::endl;

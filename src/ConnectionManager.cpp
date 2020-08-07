@@ -77,3 +77,8 @@ void ConnectionManager::pingReceived()
 }
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+bool ConnectionManager::isConnected()
+{
+    return connected;
+}

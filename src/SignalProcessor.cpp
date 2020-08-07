@@ -1,5 +1,4 @@
 #include "SignalProcessor.h"
-#include <iostream>
 
 SignalProcessor::SignalProcessor(double signalLowPass,
                                  double derivativeLowPass,
@@ -63,11 +62,13 @@ void SignalProcessor::addDataPoint(double datapoint)
     else
         triggered = false;
 
+    protection.lock();
     rawSignal.push_back(datapoint);
     filteredSignal.push_back(signal);
     signalDerivative.push_back(diff.getDerivative());
     filteredDerivative.push_back(derivativeLowPass);
     derivativeMaxAverage.push_back(diffMaxAvg.getAverage());
+    protection.unlock();
 }
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -109,8 +110,11 @@ std::string SignalProcessor::getDataString(unsigned long lastIndex,
         return "[]";
     }
 
-    if (lastIndex > dataset->size())
+    protection.lock();
+    if (lastIndex > dataset->size()) {
+        protection.unlock();
         return "[]";
+    }
 
     for (auto i = dataset->begin()+lastIndex; i != dataset->end(); i++) {
         dataString += std::to_string(*i);
@@ -121,9 +125,8 @@ std::string SignalProcessor::getDataString(unsigned long lastIndex,
         dataString.pop_back();
 
     dataString += "]";
+    protection.unlock();
 
-    std::cout << dataString << std::endl;
-    
     return dataString;
 }
 
