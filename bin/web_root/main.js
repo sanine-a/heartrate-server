@@ -43,7 +43,7 @@ function uploadFile(file)
     reader.onload = function () {
         $.post('/post',
                { callback: 'uploadAudio',
-                 audio: reader.result });
+                 audio: reader.result.replace('data:audio/x-wav;base64,', '') });
    };
    reader.onerror = function (error) {
      console.log('Error: ', error);

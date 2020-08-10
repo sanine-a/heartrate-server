@@ -8,6 +8,7 @@ find_package(Threads REQUIRED)
 
 add_executable(heartrate-server
   src/mg/mongoose.c
+  src/b64/base64.c
   src/smmServer.cpp
   src/ArduinoSerial.cpp
   src/SignalProcessor.cpp

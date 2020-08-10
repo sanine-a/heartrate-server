@@ -3,12 +3,17 @@
 #include <algorithm>
 #include <fstream>
 #include <sstream>
+#include <mutex>
 
 #include "smmServer.hpp"
 #include "ArduinoSerial.h"
 #include "SignalProcessor.h"
 #include "ConnectionManager.h"
 #include "tinydir.h"
+
+extern "C" {
+    #include "b64/base64.h"
+}
 
 #define MAX_DATA_POINTS 8192
 
@@ -22,7 +27,9 @@
 ArduinoSerial* arduino;
 ConnectionManager* connManager;
 SignalProcessor* ecgSignal;
+sf::SoundBuffer heartbeatSoundBuffer;
 sf::Sound heartbeat;
+std::mutex soundMutex;
 int numNewDataPoints = 0;
 bool leadsOff = true;
 
@@ -124,8 +131,26 @@ void uploadAudio(httpMessage message,
     try {
         std::string audioBase64 = message.getHttpVariable("audio");
         std::cout << audioBase64.length() << std::endl;
-        std::ofstream audioFile("output.wav", std::ios::binary);
-        
+
+        unsigned long audioSize = 8*audioBase64.length() + 1;
+        unsigned char* audioBinary = (unsigned char*) malloc(audioSize * sizeof(unsigned char));
+        int resultSize = b64_decode((const unsigned char*) audioBase64.c_str(),
+                                    audioBase64.length(),
+                                    audioBinary);
+        std::cout << resultSize << ", " << audioSize << std::endl;
+
+        std::ofstream audioFile("heartbeat.wav", std::ios::binary);
+        audioFile.write((const char*) audioBinary, resultSize);
+        audioFile.close();
+
+        free(audioBinary);
+
+        if(heartbeatSoundBuffer.loadFromFile("heartbeat.wav")) {
+            soundMutex.lock();
+            heartbeat.setBuffer(heartbeatSoundBuffer);
+            soundMutex.unlock();
+        }
+                
         message.replyHttpOk();
     }
     catch(...) {
@@ -160,14 +185,17 @@ int main()
                                     MAX_PERSISTENCE_TIME,
                                     MAX_SCALE);
 
-    sf::SoundBuffer buffer;
-    if (!buffer.loadFromFile("heartbeat.wav")) {
+    if (!heartbeatSoundBuffer.loadFromFile("heartbeat.wav")) {
         std::cerr << "ERROR: could not find 'heartbeat.wav'!" << std::endl;
         return 1;
     }
-    heartbeat.setBuffer(buffer);
+    heartbeat.setBuffer(heartbeatSoundBuffer);
 
-    ecgSignal->setTriggerCallback([]() { heartbeat.play(); });
+    ecgSignal->setTriggerCallback([]() {
+            soundMutex.lock();
+            heartbeat.play();
+            soundMutex.unlock();
+        });
 
     arduino->setDataCallback(processMessage);
 
