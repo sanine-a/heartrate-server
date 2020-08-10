@@ -1,0 +1,36 @@
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title>araBeat Manager</title>
+    <script type="text/javascript" src="jquery-1.11.3.min.js"></script>
+    <script type="text/javascript" src="change-params.js"></script>
+    <link rel="stylesheet" href="style.css">
+  </head>
+  <body>
+    <h2>Parameters</h2>
+    
+    <label>signal_lowpass</label>
+    <input id="signal_lowpass" type="number" step="any">
+    <br>
+    <label>derivative_lowpass</label>
+    <input id="derivative_lowpass" type="number" step="any">
+    <br>
+    <label>n_avg_samples</label>
+    <input id="n_avg_samples" type="number">
+    <br>
+    <label>n_max_samples</label>
+    <input id="n_max_samples" type="number">
+    <br>
+    <label>max_persistence_time</label>
+    <input id="max_persistence_time" type="number">
+    <br>
+    <label>max_scale</label>
+    <input id="max_scale" type="number" step="any">
+    <br>
+    <button onclick="submit()">Submit</button>
+    
+    <br>
+    <h3 id="status">Current Status: ADC not connected</h3>
+    <input type="file" id="fileUploadInput" accept=".wav" style="opacity: 0"></input>
+  </body>
+</html>
