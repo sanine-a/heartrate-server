@@ -243,7 +243,7 @@ httpMessage::httpMessage(struct mg_connection* connection,
 
 std::string httpMessage::getHttpVariable(std::string variableName) {
   char* decodedValue = (char*) malloc(256*sizeof(char));
-  mg_get_http_var(&message->body, variableName.c_str(), decodedValue, sizeof(decodedValue));
+  mg_get_http_var(&message->body, variableName.c_str(), decodedValue, 256*sizeof(char));
   std::string result = std::string(decodedValue);
   free(decodedValue);
   return result;

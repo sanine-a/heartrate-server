@@ -37,7 +37,7 @@ void SignalProcessor::leadsOff()
     std::ofstream logFile;
     logFile.open(logFileName);
     logFile <<
-        "# raw signal, lowpass filtered signal, derivative of positive part, lowpass filtered derivative, rolling maxiumum average of derivative"
+        "# raw lowpass derivative derivative_lowpass  derivative_maxiumum"
             << std::endl;
     for (int i=0; i<rawSignal.size(); i++) {
         logFile << i << " "
@@ -45,7 +45,7 @@ void SignalProcessor::leadsOff()
                 << filteredSignal[i] << " "
                 << signalDerivative[i] << " "
                 << filteredDerivative[i] << " "
-                << derivativeMaxAverage[i] << std::endl;
+                << maxScale*derivativeMaxAverage[i] << std::endl;
     }
     logFile.close();
 

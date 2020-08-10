@@ -1,12 +1,14 @@
 #include <iostream>
-#include <chrono>
-#include <deque>
 #include <SFML/Audio.hpp>
+#include <algorithm>
+#include <fstream>
+#include <sstream>
 
 #include "smmServer.hpp"
 #include "ArduinoSerial.h"
 #include "SignalProcessor.h"
 #include "ConnectionManager.h"
+#include "tinydir.h"
 
 #define MAX_DATA_POINTS 8192
 
@@ -24,6 +26,31 @@ sf::Sound heartbeat;
 int numNewDataPoints = 0;
 bool leadsOff = true;
 
+std::vector<std::string> getLogFiles()
+{
+    tinydir_dir dir;
+    std::vector<std::string> fileList;
+    tinydir_open(&dir, "./logs");
+    while (dir.has_next) {
+        tinydir_file file;
+        tinydir_readfile(&dir, &file);
+
+        if (!file.is_dir)
+            fileList.push_back(file.name);
+        
+        tinydir_next(&dir);
+    }
+
+    tinydir_close(&dir);
+
+    std::sort(fileList.begin(), fileList.end(),
+              [](std::string a, std::string b) { return b.compare(a) < 0; });
+    
+    return fileList;
+}
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
 void processMessage(std::string key, std::string value)
 {
     if (key == "arduino-ready") {
@@ -36,12 +63,10 @@ void processMessage(std::string key, std::string value)
     }
     else if (key == "leads-off") {
         if (value == "1") {
-            std::cout << "leads off" << std::endl;
             leadsOff = true;
             ecgSignal->leadsOff();
         }
         else {
-            std::cout << "leads on" << std::endl;
             leadsOff = false;
             ecgSignal->leadsOn();
         }
@@ -63,6 +88,34 @@ void getData(httpMessage message,
         message.replyHttpContent("text/plain", "[]");
     }
     message.replyHttpContent("text/plain", ecgSignal->getDataString(lastIndex, signalSelect));
+}
+
+void getLogList(httpMessage message,
+                void* d)
+{
+    auto fileList = getLogFiles();
+    std::string fileListData = "[";
+    for (auto fileName = fileList.begin(); fileName != fileList.end(); fileName++)
+        fileListData += "\"" + *fileName + "\",";
+    if (fileListData.length() > 1)
+        fileListData.pop_back();
+    fileListData += "]";
+    message.replyHttpContent("text/plain", fileListData);
+}
+
+void getLogFile(httpMessage message,
+                void* d)
+{
+    try {
+        std::string fileName = message.getHttpVariable("file");
+        std::ifstream file("./logs/" + fileName);
+        std::stringstream buffer;
+        buffer << file.rdbuf();
+        message.replyHttpContent("text/plain", buffer.str());
+    }
+    catch(...) {
+        message.replyHttpError(500, "An error occurred");
+    }
 }
 
 void checkStatus(httpMessage message,
@@ -91,7 +144,7 @@ int main()
                                     N_MAX_SAMPLES,
                                     MAX_PERSISTENCE_TIME,
                                     MAX_SCALE);
-    
+
     sf::SoundBuffer buffer;
     if (!buffer.loadFromFile("heartbeat.wav")) {
         std::cerr << "ERROR: could not find 'heartbeat.wav'!" << std::endl;
@@ -109,6 +162,8 @@ int main()
     smmServer server("8000", "./web_root", NULL);
     server.addPostCallback("getData", getData);
     server.addPostCallback("checkStatus", checkStatus);
+    server.addPostCallback("getLogList", getLogList);
+    server.addPostCallback("getLogFile", getLogFile);
     server.launch();
 
     std::cout << "Launched server on port 8000" << std::endl;
