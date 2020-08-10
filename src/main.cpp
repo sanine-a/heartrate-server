@@ -35,10 +35,16 @@ void processMessage(std::string key, std::string value)
         numNewDataPoints++;
     }
     else if (key == "leads-off") {
-        if (value == "1")
+        if (value == "1") {
+            std::cout << "leads off" << std::endl;
             leadsOff = true;
-        else
+            ecgSignal->leadsOff();
+        }
+        else {
+            std::cout << "leads on" << std::endl;
             leadsOff = false;
+            ecgSignal->leadsOn();
+        }
     }
 }
     
@@ -63,13 +69,13 @@ void checkStatus(httpMessage message,
                  void* d)
 {
     if (!connManager->isConnected()) {
-        message.replyHttpContent("text/plain", "Arduino not connected");
+        message.replyHttpContent("text/plain", "ADC not connected");
     }
     else if (leadsOff) {
-        message.replyHttpContent("text/plain", "Connected, leads off");
+        message.replyHttpContent("text/plain", "ADC connected, leads off");
     }
     else {
-        message.replyHttpContent("text/plain", "Connected, leads on");
+        message.replyHttpContent("text/plain", "ADC connected, leads on");
     }
 }
 

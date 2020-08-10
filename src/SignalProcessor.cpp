@@ -1,4 +1,6 @@
 #include "SignalProcessor.h"
+#include "date.h"
+#include <fstream>
 
 SignalProcessor::SignalProcessor(double signalLowPass,
                                  double derivativeLowPass,
@@ -29,6 +31,29 @@ void SignalProcessor::leadsOn()
 void SignalProcessor::leadsOff()
 {
     leadsAreOff = true;
+    std::string datetime = date::format("%Y-%m-%d_%H:%M:%S", std::chrono::system_clock::now());
+    std::string logFileName = "logs/" + datetime + ".dat";
+
+    std::ofstream logFile;
+    logFile.open(logFileName);
+    logFile <<
+        "# raw signal, lowpass filtered signal, derivative of positive part, lowpass filtered derivative, rolling maxiumum average of derivative"
+            << std::endl;
+    for (int i=0; i<rawSignal.size(); i++) {
+        logFile << i << " "
+                << rawSignal[i] << " "
+                << filteredSignal[i] << " "
+                << signalDerivative[i] << " "
+                << filteredDerivative[i] << " "
+                << derivativeMaxAverage[i] << std::endl;
+    }
+    logFile.close();
+
+    rawSignal.clear();
+    filteredSignal.clear();
+    signalDerivative.clear();
+    filteredDerivative.clear();
+    derivativeMaxAverage.clear();
 }
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

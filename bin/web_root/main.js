@@ -13,7 +13,7 @@ $(document).ready( () => {
                     [{ y: basic }],
                     { margin: { t: 0 } },
                     { staticPlot: true, });
-    window.setInterval(updatePlot, 100);
+    //window.setInterval(updatePlot, 500);
     window.setInterval(updateStatus, 500);
 });
 

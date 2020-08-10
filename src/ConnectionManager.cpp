@@ -27,6 +27,8 @@ bool ConnectionManager::connect(int maxAttempts)
                   std::cerr << "WARNING: handshake failed! retrying..." << std::endl;
                   attempts++;
                   arduino.closePort();
+                  std::chrono::steady_clock::time_point lastTime = std::chrono::steady_clock::now();
+                  while(std::chrono::steady_clock::now() - lastTime < std::chrono::seconds(5)) {}
             }
         }
         else {

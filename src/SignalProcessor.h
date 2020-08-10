@@ -4,6 +4,7 @@
 #include <vector>
 #include <deque>
 #include <string>
+#include <chrono>
 #include <mutex>
 
 class Averager

@@ -4,3 +4,5 @@ CMakeFiles
 cmake_install.cmake
 Makefile
 bin/heartrate-server
+bin/logs/*
+bin/server.log
