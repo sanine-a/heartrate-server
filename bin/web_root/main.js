@@ -9,6 +9,11 @@ $(document).ready( () => {
     for (let i=0; i<MAX_DATA_POINTS; i++) {
         basic.push(0);
     }
+    $('#fileUploadInput').change( () => { let files = document.getElementById('fileUploadInput').files;
+                                          if (files.length > 0) {
+                                              uploadFile(files[0]);
+                                          }
+                                        });
     window.setInterval(updateStatus, 500);
 });
 
@@ -23,3 +28,24 @@ function updateStatus()
 }
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+function pickFile()
+{
+    $('#fileUploadInput').trigger("click");
+}
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+function uploadFile(file)
+{
+    var reader = new FileReader();
+    reader.readAsDataURL(file);
+    reader.onload = function () {
+        $.post('/post',
+               { callback: 'uploadAudio',
+                 audio: reader.result });
+   };
+   reader.onerror = function (error) {
+     console.log('Error: ', error);
+   };
+}

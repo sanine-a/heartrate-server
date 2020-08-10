@@ -37,7 +37,7 @@ void SignalProcessor::leadsOff()
     std::ofstream logFile;
     logFile.open(logFileName);
     logFile <<
-        "# raw lowpass derivative derivative_lowpass  derivative_maxiumum"
+        "# n raw lowpass derivative derivative_lowpass derivative_maxiumum"
             << std::endl;
     for (int i=0; i<rawSignal.size(); i++) {
         logFile << i << " "

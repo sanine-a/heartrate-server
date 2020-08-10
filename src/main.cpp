@@ -118,6 +118,21 @@ void getLogFile(httpMessage message,
     }
 }
 
+void uploadAudio(httpMessage message,
+                 void* d)
+{
+    try {
+        std::string audioBase64 = message.getHttpVariable("audio");
+        std::cout << audioBase64.length() << std::endl;
+        std::ofstream audioFile("output.wav", std::ios::binary);
+        
+        message.replyHttpOk();
+    }
+    catch(...) {
+        message.replyHttpError(500, "An error occurred");
+    }
+}
+
 void checkStatus(httpMessage message,
                  void* d)
 {
@@ -164,6 +179,7 @@ int main()
     server.addPostCallback("checkStatus", checkStatus);
     server.addPostCallback("getLogList", getLogList);
     server.addPostCallback("getLogFile", getLogFile);
+    server.addPostCallback("uploadAudio", uploadAudio);
     server.launch();
 
     std::cout << "Launched server on port 8000" << std::endl;

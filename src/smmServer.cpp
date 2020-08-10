@@ -242,11 +242,19 @@ httpMessage::httpMessage(struct mg_connection* connection,
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 std::string httpMessage::getHttpVariable(std::string variableName) {
-  char* decodedValue = (char*) malloc(256*sizeof(char));
-  mg_get_http_var(&message->body, variableName.c_str(), decodedValue, 256*sizeof(char));
-  std::string result = std::string(decodedValue);
-  free(decodedValue);
-  return result;
+    int bufferLength = 256;
+    char* decodedValue = (char*) malloc(bufferLength*sizeof(char));
+    int attempts = 0;
+    while (mg_get_http_var(&message->body, variableName.c_str(), decodedValue, bufferLength*sizeof(char)) == -3 &&
+           attempts < 20) {
+        bufferLength *= 2;
+        free(decodedValue);
+        decodedValue = (char*) malloc(bufferLength*sizeof(char));
+        attempts++;
+    }
+    std::string result = std::string(decodedValue);
+    free(decodedValue);
+    return result;
 }
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
